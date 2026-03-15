@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔐 AI Escape Lab
 
-## Getting Started
+Jogo de escape room com agentes de IA integrados. O jogador explora salas, 
+coleta itens e resolve puzzles interagindo com um narrador inteligente powered 
+by Claude (Anthropic).
 
-First, run the development server:
+Projeto desenvolvido para a disciplina **Engenharia de Prompt e Aplicação em IA**  
+— Universidade Braz Cubas, 8º Período CC / 4º ADS.
 
+---
+
+## 🎮 Sobre o projeto
+
+O AI Escape Lab é uma aplicação web completa onde a IA é parte central da 
+mecânica do jogo — não apenas um chatbot. O jogador digita ações em linguagem 
+natural e dois agentes de IA respondem em tempo real:
+
+- **Agente Narrador** — descreve o ambiente, interpreta ações e controla a narrativa
+- **Agente Puzzle Engine** — valida respostas, consulta o banco de puzzles via RAG e gera dicas progressivas
+
+---
+
+## 🧠 Técnicas de IA implementadas
+
+- **Tool Use / Function Calling** — agentes chamam ferramentas externas (`change_room`, `check_inventory`, `solve_puzzle`)
+- **RAG (Retrieval-Augmented Generation)** — busca vetorial em banco de puzzles via Supabase pgvector
+- **Multi-agent** — orquestrador LangChain coordena dois agentes com papéis distintos
+- **Memória persistente** — contexto de conversa e progresso salvos entre sessões
+
+---
+
+## 🛠️ Tecnologias
+
+| Categoria | Tecnologia |
+|---|---|
+| Framework | Next.js 15 (App Router) |
+| Linguagem | TypeScript |
+| Estilização | Tailwind CSS |
+| Autenticação | NextAuth.js v5 |
+| Agentes | LangChain.js |
+| Modelo de IA | Claude (Anthropic) |
+| Banco de dados | Supabase (PostgreSQL + pgvector) |
+| Deploy | Vercel |
+
+---
+
+## 🚀 Como rodar localmente
+
+### Pré-requisitos
+
+- Node.js 18+
+- Conta no [Supabase](https://supabase.com)
+- Chave de API da [Anthropic](https://console.anthropic.com)
+
+### Instalação
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
