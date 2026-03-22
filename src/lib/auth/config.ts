@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/superbase/admin'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [

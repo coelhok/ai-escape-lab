@@ -1,4 +1,3 @@
- 
 'use client'
 
 import { useState } from 'react'
@@ -10,11 +9,11 @@ export default function AuthForm() {
   const [password, setPassword] = useState('')
   const [isRegister, setIsRegister] = useState(false)
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (isRegister) {
-      register(email, password)
+      await register(email, password)
     } else {
-      login(email, password)
+      await login(email, password)
     }
   }
 

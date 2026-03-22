@@ -1,52 +1,55 @@
-'use client'
-
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { superbase } from '@/lib/superbase/client'
 
 export function useAuth() {
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const router = useRouter()
 
   async function login(email: string, password: string) {
     setIsLoading(true)
     setError('')
 
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    })
+    const { error: authError } = await superbase.auth.signInWithPassword({ email, password })
 
-    if (result?.error) {
-      setError('Email ou senha incorretos')
-      setIsLoading(false)
-      return
+    console.log('authError:', authError)
+    console.log('Login ok, redirecionando...')
+
+    if (authError) {
+      if (authError.message.includes('Invalid login credentials')) {
+        setError('Email ou senha incorretos.')
+      } else {
+        setError('Erro ao entrar. Tente novamente.')
+      }
+    } else {
+      console.log('Chamando router.push /game')
+      router.push('/game')
+      console.log('router.push chamado!')
     }
 
-    router.push('/game')
+    setIsLoading(false)
   }
 
   async function register(email: string, password: string) {
     setIsLoading(true)
     setError('')
 
-    const res = await fetch('/api/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
+    const { error: authError } = await superbase.auth.signUp({ email, password })
 
-    const data = await res.json()
-
-    if (!res.ok) {
-      setError(data.error || 'Erro ao criar conta')
-      setIsLoading(false)
-      return
+    if (authError) {
+      if (authError.message.includes('User already registered')) {
+        setError('Este email já está cadastrado. Faça login!')
+      } else if (authError.message.includes('Password')) {
+        setError('Senha fraca. Use pelo menos 6 caracteres.')
+      } else {
+        setError('Erro ao criar conta. Tente novamente.')
+      }
+    } else {
+      router.push('/game')
     }
 
-    await login(email, password)
+    setIsLoading(false)
   }
 
   return { login, register, isLoading, error, setError }
