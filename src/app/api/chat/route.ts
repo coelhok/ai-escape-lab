@@ -1,223 +1,85 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { NextRequest } from "next/server";
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-// System prompt do Agente Narrador
-const NARRATOR_SYSTEM = `Você é o Agente Narrador do AI Escape Lab — um jogo de escape room.
-Seu papel é descrever o ambiente, interpretar as ações do jogador e conduzir a narrativa.
-
-Regras:
-- Responda SEMPRE em português do Brasil
-- Descreva o ambiente de forma imersiva e detalhada
-- Interprete as ações do jogador de forma criativa
-- Quando o jogador tentar pegar um item, use a tool check_inventory
-- Quando o jogador quiser mudar de sala, use a tool change_room
-- Mantenha o suspense e a imersão do jogo
-- Respostas curtas e dinâmicas (máximo 3 parágrafos)`;
-
-// Definição das tools (Function Calling - RF07)
-const TOOLS: Anthropic.Tool[] = [
-  {
-    name: "change_room",
-    description: "Muda o jogador para outra sala do escape room",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        room_id: {
-          type: "string",
-          description: "ID da sala destino (lab, corridor, server_room, exit)",
-        },
-        reason: {
-          type: "string",
-          description: "Motivo narrativo da mudança de sala",
-        },
-      },
-      required: ["room_id", "reason"],
-    },
-  },
-  {
-    name: "check_inventory",
-    description: "Verifica ou atualiza o inventário do jogador",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        action: {
-          type: "string",
-          enum: ["add", "remove", "list"],
-          description: "Ação a realizar no inventário",
-        },
-        item: {
-          type: "string",
-          description: "Nome do item (obrigatório para add/remove)",
-        },
-      },
-      required: ["action"],
-    },
-  },
-  {
-    name: "get_scene",
-    description: "Retorna a descrição detalhada da cena/sala atual",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        room_id: {
-          type: "string",
-          description: "ID da sala para descrever",
-        },
-      },
-      required: ["room_id"],
-    },
-  },
-];
-
-// Simulação das tools (depois vai conectar ao Supabase)
-function executeTool(toolName: string, toolInput: Record<string, string>) {
-  switch (toolName) {
-    case "change_room":
-      return {
-        success: true,
-        new_room: toolInput.room_id,
-        message: `Você entrou em: ${toolInput.room_id}`,
-      };
-
-    case "check_inventory":
-      if (toolInput.action === "list") {
-        return { items: ["lanterna", "cartão magnético"] };
-      }
-      return { success: true, action: toolInput.action, item: toolInput.item };
-
-    case "get_scene":
-      const scenes: Record<string, string> = {
-        lab: "Um laboratório escuro. Equipamentos quebrados espalhados pelo chão. Uma porta de metal ao norte e uma janela gradeada ao leste.",
-        corridor: "Um corredor longo e mal iluminado. O cheiro de ozônio no ar. Portas numeradas dos dois lados.",
-        server_room: "Uma sala de servidores zumbindo. Luzes piscando em vermelho. Um terminal desbloqueado no canto.",
-        exit: "A saída! Uma porta reforçada com um painel de código numérico.",
-      };
-      return {
-        description: scenes[toolInput.room_id] || "Sala desconhecida.",
-      };
-
-    default:
-      return { error: "Tool não encontrada" };
-  }
-}
-
 export async function POST(req: NextRequest) {
+  console.log('🚀 [1] Rota /api/chat chamada')
+
+  const client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    baseURL: "https://api.groq.com/openai/v1",
+  });
+
+  console.log('✅ [2] Cliente Groq criado')
+
   try {
-    const { messages, currentRoom = "lab", inventory = [] } = await req.json();
+    const body = await req.json();
+    console.log('✅ [3] Body recebido:', JSON.stringify(body).slice(0, 100))
 
-    // Contexto de estado do jogo injetado no system prompt
-    const systemWithContext = `${NARRATOR_SYSTEM}
+    const { messages, currentRoom = "lab", inventory = [] } = body;
+    console.log('✅ [4] Messages:', messages.length, 'mensagens')
+    console.log('✅ [5] Última mensagem:', messages[messages.length - 1])
 
-ESTADO ATUAL DO JOGO:
-- Sala atual: ${currentRoom}
-- Inventário do jogador: ${inventory.length > 0 ? inventory.join(", ") : "vazio"}`;
+    const system = `Voce e BASE, agente de suporte tatico do AI Escape Lab.
+Fale como operador de radio tatico.
+Termine suas mensagens com Cambio.
+Faca perguntas sobre o ambiente.
+Maximo 3 frases por resposta.
+Sala atual: ${currentRoom}.
+Inventario: ${inventory.join(", ") || "vazio"}.`;
 
-    // Stream SSE para o frontend (RF05)
+    console.log('✅ [6] System prompt criado')
+
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          let currentMessages = [...messages];
+          console.log('✅ [7] Iniciando chamada ao Groq...')
 
-          // Loop agentico: continua até não ter mais tool calls
-          while (true) {
-            const response = await client.messages.create({
-              model: "claude-sonnet-4-5",
-              max_tokens: 1024,
-              system: systemWithContext,
-              tools: TOOLS,
-              messages: currentMessages,
-              stream: true,
-            });
+          const response = await client.chat.completions.create({
+            model: "llama-3.1-8b-instant",
+            stream: true,
+            max_tokens: 1024,
+            messages: [
+              { role: "system", content: system },
+              ...messages.map((m: { role: string; content: string }) => ({
+                role: m.role as "user" | "assistant",
+                content: m.content,
+              })),
+            ],
+          });
 
-            let fullText = "";
-            let toolUseBlock: Anthropic.ToolUseBlock | null = null;
-            let stopReason = "";
+          console.log('✅ [8] Groq respondeu, iniciando stream...')
 
-            // Processa o stream token a token
-            for await (const event of response) {
-              if (
-                event.type === "content_block_delta" &&
-                event.delta.type === "text_delta"
-              ) {
-                fullText += event.delta.text;
-                // Envia cada token para o frontend em tempo real
-                controller.enqueue(
-                  encoder.encode(
-                    `data: ${JSON.stringify({ type: "text", content: event.delta.text })}\n\n`
-                  )
-                );
-              }
-
-              if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
-                toolUseBlock = event.content_block as Anthropic.ToolUseBlock;
-              }
-
-              if (event.type === "message_delta") {
-                stopReason = event.delta.stop_reason ?? "";
-              }
-            }
-
-            // Se parou por tool_use, executa a tool e continua o loop
-            if (stopReason === "tool_use" && toolUseBlock) {
-              const toolResult = executeTool(
-                toolUseBlock.name,
-                toolUseBlock.input as Record<string, string>
-              );
-
-              // Notifica o frontend que uma tool foi chamada
+          let totalText = '';
+          for await (const chunk of response) {
+            const text = chunk.choices[0]?.delta?.content || "";
+            if (text) {
+              totalText += text;
               controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({
-                    type: "tool_call",
-                    tool: toolUseBlock.name,
-                    result: toolResult,
-                  })}\n\n`
-                )
+                encoder.encode(`data: ${JSON.stringify({ type: "text", content: text })}\n\n`)
               );
-
-              // Adiciona o resultado da tool no histórico e continua
-              currentMessages = [
-                ...currentMessages,
-                { role: "assistant", content: [toolUseBlock] },
-                {
-                  role: "user",
-                  content: [
-                    {
-                      type: "tool_result",
-                      tool_use_id: toolUseBlock.id,
-                      content: JSON.stringify(toolResult),
-                    },
-                  ],
-                },
-              ];
-            } else {
-              // Sem tool_use: resposta final, encerra o stream
-              controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({ type: "done", fullText })}\n\n`
-                )
-              );
-              break;
             }
           }
-       } catch (error) {
-  console.log('❌ Erro no agente:', error)
-  controller.enqueue(
-    encoder.encode(
-      `data: ${JSON.stringify({ type: "error", message: String(error) })}\n\n`
-    )
-  );
-} finally {
-  controller.close();
-}
-},
+
+          console.log('✅ [9] Stream completo. Total de texto:', totalText.length, 'chars')
+
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`)
+          );
+
+        } catch (error) {
+          console.log("❌ [ERRO no stream]:", error)
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: "error", message: String(error) })}\n\n`)
+          );
+        } finally {
+          console.log('✅ [10] Stream fechado')
+          controller.close();
+        }
+      },
     });
 
+    console.log('✅ [11] Retornando Response com stream')
     return new Response(stream, {
       headers: {
         "Content-Type": "text/event-stream",
@@ -225,7 +87,9 @@ ESTADO ATUAL DO JOGO:
         Connection: "keep-alive",
       },
     });
+
   } catch (error) {
+    console.log("❌ [ERRO interno]:", error)
     return Response.json({ error: "Erro interno" }, { status: 500 });
   }
 }
