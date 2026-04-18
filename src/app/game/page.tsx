@@ -1,105 +1,30 @@
-'use client'
+﻿"use client"
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { superbase } from '@/lib/superbase/client'
-import ScenePanel from '@/components/game/ScenePanel'
-import RadioChat from '@/components/game/RadioChat'
+import { useRouter, useSearchParams } from "next/navigation"
+import { useSession } from "@/hooks/useSession"
+import ScenePanel from "@/components/game/ScenePanel"
+import RadioChat from "@/components/game/RadioChat"
+import { superbase } from "@/lib/superbase/client"
 
 export type Message = {
-  role: 'user' | 'assistant'
+  role: "user" | "assistant"
   content: string
 }
 
 export default function GamePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const sessionIdFromUrl = searchParams.get('session')
+  const sessionIdFromUrl = searchParams.get("session")
 
-  const [currentRoom, setCurrentRoom] = useState('lab')
-  const [inventory, setInventory] = useState<string[]>([])
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: 'BASE para CAMPO. Agente, você está no laboratório. Equipamentos quebrados por toda parte. Consigo ver uma porta de metal ao norte. O que você vê aí? Câmbio.'
-    }
-  ])
-  const [sessionId, setSessionId] = useState<string | null>(null)
-  const [initialized, setInitialized] = useState(false)
-
-  useEffect(() => {
-    async function initSession() {
-      console.log('🔍 sessionIdFromUrl:', sessionIdFromUrl)
-
-      const { data: { user } } = await superbase.auth.getUser()
-      if (!user) return
-
-      if (sessionIdFromUrl) {
-        console.log('📂 Carregando sessão existente...')
-        const { data, error } = await superbase
-          .from('sessions')
-          .select('*')
-          .eq('id', sessionIdFromUrl)
-          .single()
-
-        console.log('📦 Sessão carregada:', data)
-        console.log('❌ Erro:', error)
-
-        if (!error && data) {
-          setSessionId(data.id)
-          setMessages(data.messages)
-          setCurrentRoom(data.current_room)
-          setInventory(data.inventory)
-        }
-        setInitialized(true)
-        return
-      }
-
-      console.log('🆕 Criando sessão nova...')
-      const { data, error } = await superbase
-        .from('sessions')
-        .insert({
-          user_id: user.id,
-          messages,
-          current_room: currentRoom,
-          inventory,
-        })
-        .select()
-        .single()
-
-      console.log('✅ Sessão criada:', data?.id)
-      console.log('❌ Erro:', error)
-
-      if (!error && data) {
-        setSessionId(data.id)
-      }
-      setInitialized(true)
-    }
-
-    initSession()
-  }, [])
-
-  useEffect(() => {
-    if (!initialized || !sessionId) return
-
-    async function saveSession() {
-      await superbase
-        .from('sessions')
-        .update({
-          messages,
-          current_room: currentRoom,
-          inventory,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', sessionId)
-    }
-
-    saveSession()
-  }, [messages, currentRoom, inventory])
+  const {
+    messages, setMessages,
+    currentRoom, setCurrentRoom,
+    inventory, setInventory,
+  } = useSession(sessionIdFromUrl)
 
   async function handleLogout() {
     await superbase.auth.signOut()
-    router.push('/login')
+    router.push("/login")
   }
 
   return (
@@ -113,16 +38,10 @@ export default function GamePage() {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push('/history')}
-            className="text-gray-400 hover:text-green-400 text-sm transition-colors"
-          >
-            📋 Histórico
+          <button onClick={() => router.push("/history")} className="text-gray-400 hover:text-green-400 text-sm transition-colors">
+            📋 Historico
           </button>
-          <button
-            onClick={handleLogout}
-            className="text-gray-400 hover:text-red-400 text-sm transition-colors"
-          >
+          <button onClick={handleLogout} className="text-gray-400 hover:text-red-400 text-sm transition-colors">
             Sair
           </button>
         </div>
