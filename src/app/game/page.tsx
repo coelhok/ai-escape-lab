@@ -1,17 +1,19 @@
 ﻿"use client"
 
+import { Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "@/hooks/useSession"
 import ScenePanel from "@/components/game/ScenePanel"
 import RadioChat from "@/components/game/RadioChat"
 import { superbase } from "@/lib/superbase/client"
+import { Room } from '@/types/game'
 
 export type Message = {
   role: "user" | "assistant"
   content: string
 }
 
-export default function GamePage() {
+function GameContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const sessionIdFromUrl = searchParams.get("session")
@@ -57,11 +59,19 @@ export default function GamePage() {
             setMessages={setMessages}
             currentRoom={currentRoom}
             inventory={inventory}
-            onRoomChange={setCurrentRoom}
+            onRoomChange={(room) => setCurrentRoom(room as Room)}
             onInventoryChange={setInventory}
           />
         </div>
       </main>
     </div>
+  )
+}
+
+export default function GamePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-950 flex items-center justify-center text-green-400">Carregando...</div>}>
+      <GameContent />
+    </Suspense>
   )
 }
