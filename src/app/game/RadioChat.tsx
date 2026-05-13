@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Message } from '@/app/game/page'
-import { Room } from '@/types/game'
+import type { Message, Room } from '@/types/game'
+
 
 type RadioChatProps = {
   messages: Message[]
