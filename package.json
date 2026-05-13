@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/groq": "^3.0.39",
     "@anthropic-ai/sdk": "^0.80.0",
     "@google/generative-ai": "^0.24.1",
     "@langchain/anthropic": "^0.3.20",
@@ -21,7 +22,8 @@
     "next-auth": "^5.0.0-beta.30",
     "openai": "^6.33.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

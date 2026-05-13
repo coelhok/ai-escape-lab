@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-const superbase = createClient(
+const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
 
   // Passo 1 — Verifica cache no Supabase
   try {
-    const { data } = superbase.storage
+    const { data } = supabase.storage
       .from('room-images')
       .getPublicUrl(`${room}.png`)
 
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
     try {
       const buffer = Buffer.from(base64Image, 'base64')
 
-      const { error } = await superbase.storage
+      const { error } = await supabase.storage
         .from('room-images')
         .upload(`${room}.png`, buffer, {
           contentType: 'image/png',
@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
         })
 
       if (!error) {
-        const { data } = superbase.storage
+        const { data } = supabase.storage
           .from('room-images')
           .getPublicUrl(`${room}.png`)
 

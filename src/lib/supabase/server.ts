@@ -14,10 +14,12 @@ export async function createServerSupabaseClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
+            cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set(name, value, options)
-            )
-          } catch {}
+            })
+          } catch {
+            // O Next pode bloquear alteração de cookies em alguns contextos server-side.
+          }
         },
       },
     }
