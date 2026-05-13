@@ -1,56 +1,162 @@
 # 🔐 AI Escape Lab
 
-Jogo de escape room com agentes de IA integrados. O jogador explora salas, 
-coleta itens e resolve puzzles interagindo com um narrador inteligente powered 
-by Claude (Anthropic).
+Escape room inteligente com arquitetura multi-agente baseada em IA generativa.
 
-Projeto desenvolvido para a disciplina **Engenharia de Prompt e Aplicação em IA**  
-— Universidade Braz Cubas, 8º Período CC / 4º ADS.
+O jogador explora ambientes, resolve puzzles e interage em linguagem natural com agentes de IA especializados que controlam a narrativa e a lógica do jogo em tempo real.
 
----
-
-## 🎮 Sobre o projeto
-
-O AI Escape Lab é uma aplicação web completa onde a IA é parte central da 
-mecânica do jogo — não apenas um chatbot. O jogador digita ações em linguagem 
-natural e dois agentes de IA respondem em tempo real:
-
-- **Agente Narrador** — descreve o ambiente, interpreta ações e controla a narrativa
-- **Agente Puzzle Engine** — valida respostas, consulta o banco de puzzles via RAG e gera dicas progressivas
+Projeto desenvolvido para a disciplina **Engenharia de Prompt e Aplicações em IA**  
+— Universidade Braz Cubas (ADS / Ciência da Computação)
 
 ---
 
-## 🧠 Técnicas de IA implementadas
+# 🎮 Sobre o projeto
 
-- **Tool Use / Function Calling** — agentes chamam ferramentas externas (`change_room`, `check_inventory`, `solve_puzzle`)
-- **RAG (Retrieval-Augmented Generation)** — busca vetorial em banco de puzzles via Supabase pgvector
-- **Multi-agent** — orquestrador LangChain coordena dois agentes com papéis distintos
-- **Memória persistente** — contexto de conversa e progresso salvos entre sessões
+O AI Escape Lab transforma a IA no núcleo da mecânica do jogo.
+
+Em vez de menus fixos ou comandos pré-programados, o jogador interage usando linguagem natural. Um sistema multi-agente interpreta ações, controla o ambiente e responde dinamicamente conforme o progresso da sessão.
+
+A aplicação funciona como um escape room narrativo orientado por IA, combinando:
+
+- narrativa procedural
+- resolução de puzzles
+- memória contextual
+- tool calling
+- streaming em tempo real
 
 ---
 
-## 🛠️ Tecnologias
+# 🧠 Arquitetura de IA
+
+O sistema utiliza uma arquitetura multi-agente modular.
+
+## 🎙️ Narrator Agent
+
+Responsável por:
+
+- descrever ambientes
+- interpretar ações do jogador
+- controlar tensão narrativa
+- orientar exploração
+- movimentação entre salas
+
+### Tools utilizadas
+
+- `getScene`
+- `changeRoom`
+
+---
+
+## 🧩 Puzzle Engine Agent
+
+Responsável por:
+
+- validar respostas de puzzles
+- gerar dicas progressivas
+- controlar progressão lógica
+- verificar itens do inventário
+
+### Tools utilizadas
+
+- `solvePuzzle`
+- `checkInventory`
+
+---
+
+## 🧭 Agent Orchestrator
+
+Camada responsável por coordenar os agentes.
+
+O orquestrador analisa a intenção da mensagem do jogador e decide qual agente deve responder:
+
+- Narrador
+- Puzzle Engine
+
+---
+
+# ⚙️ Técnicas de IA implementadas
+
+## ✅ Tool Calling
+
+Os agentes utilizam ferramentas internas para executar ações estruturadas:
+
+- troca de salas
+- validação de puzzles
+- verificação de inventário
+- leitura de contexto
+
+---
+
+## ✅ Streaming SSE
+
+As respostas são transmitidas em tempo real usando:
+
+- Server-Sent Events (SSE)
+- AI SDK streaming
+- resposta token-by-token
+
+---
+
+## ✅ Multi-Agent Architecture
+
+O sistema separa responsabilidades entre agentes especializados:
+
+- narrativa
+- puzzles
+- orquestração
+
+Isso melhora:
+
+- modularidade
+- escalabilidade
+- controle de prompts
+- consistência das respostas
+
+---
+
+## 🚧 Próximas evoluções
+
+Estruturas planejadas para próximas versões:
+
+- RAG com pgvector
+- memória persistente avançada
+- geração procedural de puzzles
+- supervisor agent
+- salvamento de progresso
+- ranking de sessões
+
+---
+
+# 🛠️ Stack Tecnológica
 
 | Categoria | Tecnologia |
 |---|---|
-| Framework | Next.js 15 (App Router) |
+| Framework | Next.js 16 |
 | Linguagem | TypeScript |
 | Estilização | Tailwind CSS |
+| IA | Groq |
+| SDK de IA | Vercel AI SDK |
 | Autenticação | NextAuth.js v5 |
-| Agentes | LangChain.js |
-| Modelo de IA | Claude (Anthropic) |
-| Banco de dados | Supabase (PostgreSQL + pgvector) |
+| Banco de dados | Supabase |
+| ORM/DB | PostgreSQL |
 | Deploy | Vercel |
 
 ---
 
-## 🚀 Como rodar localmente
+# 🚀 Como rodar localmente
 
-### Pré-requisitos
+## Pré-requisitos
 
 - Node.js 18+
-- Conta no [Supabase](https://supabase.com)
-- Chave de API da [Anthropic](https://console.anthropic.com)
+- Conta no Supabase
+- Chave da API Groq
 
-### Instalação
+---
+
+## Instalação
+
 ```bash
+git clone https://github.com/coelhok/ai-escape-lab.git
+
+cd ai-escape-lab
+
+npm install
