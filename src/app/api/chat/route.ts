@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { narratorAgent } from "@/agents/narrator";
+import { agentOrchestrator } from "@/agents/orchestrator";
 
 type ChatMessage = {
   role: "user" | "assistant" | "system";
@@ -34,7 +34,7 @@ Contexto atual do jogo:
       ...messages,
     ];
 
-    const result = await narratorAgent(finalMessages);
+    const result = await agentOrchestrator(finalMessages);
 
     const encoder = new TextEncoder();
 
