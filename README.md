@@ -136,7 +136,7 @@ Estruturas planejadas para próximas versões:
 | IA | Groq |
 | SDK de IA | Vercel AI SDK |
 | Autenticação | NextAuth.js v5 |
-| Banco de dados | Supabase |
+| Banco de dados | Superbase |
 | ORM/DB | PostgreSQL |
 | Deploy | Vercel |
 
@@ -147,7 +147,7 @@ Estruturas planejadas para próximas versões:
 ## Pré-requisitos
 
 - Node.js 18+
-- Conta no Supabase
+- Conta no Superbase
 - Chave da API Groq
 
 ---
