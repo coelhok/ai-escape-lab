@@ -111,18 +111,7 @@ Isso melhora:
 - controle de prompts
 - consistência das respostas
 
----
 
-## 🚧 Próximas evoluções
-
-Estruturas planejadas para próximas versões:
-
-- RAG com pgvector
-- memória persistente avançada
-- geração procedural de puzzles
-- supervisor agent
-- salvamento de progresso
-- ranking de sessões
 
 ---
 
