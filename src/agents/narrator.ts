@@ -11,7 +11,7 @@ type AgentMessage = {
 
 export async function narratorAgent(messages: AgentMessage[]) {
   const result = streamText({
-    model: groq("llama-3.3-70b-versatile"),
+    model: groq("llama-3.1-8b-instant"),
 
     system: `
 Você é o narrador principal de um jogo escape room com IA.
@@ -29,6 +29,8 @@ use getScene.
 
 Se o jogador quiser mudar de sala:
 use changeRoom.
+
+Depois de usar uma tool, sempre gere uma resposta final em texto para o jogador.
     `,
 
     messages,
@@ -37,8 +39,6 @@ use changeRoom.
       getScene,
       changeRoom,
     },
-
-    
   });
 
   return result;
