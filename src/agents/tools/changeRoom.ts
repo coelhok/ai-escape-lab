@@ -2,8 +2,10 @@ import { tool } from "ai";
 import { z } from "zod";
 
 const validRooms = [
-  "laboratory",
-  "control_room",
+  "lab",
+  "corridor",
+  "server_room",
+  "exit",
 ];
 
 export const changeRoom = tool({

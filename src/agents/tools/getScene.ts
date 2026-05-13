@@ -2,7 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 
 const rooms: Record<string, string> = {
-  laboratory: `
+  lab: `
 Você está em um laboratório abandonado.
 
 Luzes piscam no teto.
@@ -11,15 +11,29 @@ Um computador antigo emite um som baixo.
 Uma porta trancada possui um teclado numérico.
   `,
 
-  control_room: `
-Você entrou na sala de controle.
+  corridor: `
+Você está em um corredor estreito e mal iluminado.
 
-Monitores antigos mostram câmeras de segurança.
-Há um painel elétrico aberto.
-Cabos espalhados pelo chão soltam faíscas.
+As paredes têm marcas de queimadura.
+Há portas metálicas dos dois lados.
+Um som distante ecoa no fundo do corredor.
+  `,
+
+  server_room: `
+Você entrou na sala dos servidores.
+
+Racks piscam em vermelho.
+O ar está frio e há cabos espalhados pelo chão.
+Um terminal bloqueado aguarda uma senha.
+  `,
+
+  exit: `
+Você chegou à saída de emergência.
+
+A porta está reforçada.
+Um painel exige a confirmação final para liberar a passagem.
   `,
 };
-
 export const getScene = tool({
   description: "Retorna a descrição da sala atual.",
 
