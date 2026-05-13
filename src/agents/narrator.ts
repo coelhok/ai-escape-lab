@@ -13,7 +13,7 @@ export async function narratorAgent(messages: AgentMessage[]) {
   const result = streamText({
     model: groq("llama-3.1-8b-instant"),
 
- system: `
+    system: `
 Você é o narrador principal de um jogo escape room com IA.
 
 Seu papel:
@@ -33,7 +33,7 @@ Regras importantes:
 - Depois de usar uma tool, transforme o resultado em uma resposta narrativa natural.
 - Responda sempre em português.
 - Mantenha no máximo 3 frases.
-`,
+    `,
 
     messages,
 

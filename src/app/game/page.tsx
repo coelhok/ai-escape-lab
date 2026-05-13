@@ -1,77 +1,82 @@
-"use client"
+"use client";
 
-import { Suspense } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useSession } from "@/hooks/useSession"
-import ScenePanel from "@/components/game/ScenePanel"
-import RadioChat from "@/components/game/RadioChat"
-import { supabase } from "@/lib/supabase/client"
-import { Room } from '@/types/game'
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
 
-export type Message = {
-  role: "user" | "assistant"
-  content: string
-}
-
-function GameContent() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const sessionIdFromUrl = searchParams.get("session")
-
-  const {
-    messages, setMessages,
-    currentRoom, setCurrentRoom,
-    inventory, setInventory,
-  } = useSession(sessionIdFromUrl)
-
-  async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push("/login")
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-green-400 text-xl">??</span>
-          <h1 className="text-white font-bold text-lg">AI Escape Lab</h1>
-          <span className="bg-gray-800 text-green-400 text-xs px-3 py-1 rounded-full border border-green-900">
-            {currentRoom.toUpperCase()}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.push("/history")} className="text-gray-400 hover:text-green-400 text-sm transition-colors">
-            ?? Historico
-          </button>
-          <button onClick={handleLogout} className="text-gray-400 hover:text-red-400 text-sm transition-colors">
-            Sair
-          </button>
-        </div>
-      </header>
-
-      <main className="flex-1 flex overflow-hidden">
-        <div className="w-80 border-r border-gray-800 flex-shrink-0">
-          <ScenePanel currentRoom={currentRoom} inventory={inventory} />
-        </div>
-        <div className="flex-1">
-          <RadioChat
-            messages={messages}
-            setMessages={setMessages}
-            currentRoom={currentRoom}
-            inventory={inventory}
-            onRoomChange={(room) => setCurrentRoom(room as Room)}
-            onInventoryChange={setInventory}
-          />
-        </div>
-      </main>
-    </div>
-  )
-}
+import ScenePanel from "@/components/game/ScenePanel";
+import RadioChat from "@/components/game/RadioChat";
+import type { Message, Room } from "@/types/game";
 
 export default function GamePage() {
+  const [currentRoom, setCurrentRoom] = useState<Room>("lab");
+  const [inventory, setInventory] = useState<string[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const scene = (
+    <ScenePanel
+      currentRoom={currentRoom}
+      inventory={inventory}
+    />
+  );
+
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-950 flex items-center justify-center text-green-400">Carregando...</div>}>
-      <GameContent />
-    </Suspense>
-  )
+    <main className="min-h-screen w-full overflow-hidden bg-[#030712] text-white">
+      <button
+        type="button"
+        onClick={() => setSidebarOpen(true)}
+        className="fixed left-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-xl border border-green-700 bg-gray-900 text-green-400 shadow-lg lg:hidden"
+        aria-label="Abrir mapa e inventário"
+      >
+        <Menu size={24} />
+      </button>
+
+      <div className="flex h-screen w-full overflow-hidden">
+        <aside className="hidden h-screen w-80 shrink-0 overflow-y-auto border-r border-gray-800 bg-[#030712] lg:block">
+          {scene}
+        </aside>
+
+        <section className="h-screen min-w-0 flex-1 overflow-hidden pt-16 lg:pt-0">
+          <RadioChat
+            currentRoom={currentRoom}
+            inventory={inventory}
+            messages={messages}
+            setMessages={setMessages}
+            onRoomChange={setCurrentRoom}
+            onInventoryChange={setInventory}
+          />
+        </section>
+      </div>
+
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-[999] lg:hidden">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className="absolute inset-0 h-full w-full bg-black/75"
+            aria-label="Fechar menu"
+          />
+
+          <aside className="absolute left-0 top-0 h-full w-[86vw] max-w-sm overflow-y-auto border-r border-green-700 bg-[#030712] p-4 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-bold text-green-400">
+                Mapa e Inventário
+              </h2>
+
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-lg border border-green-700 bg-gray-900 text-green-400"
+                aria-label="Fechar menu"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {scene}
+          </aside>
+        </div>
+      )}
+    </main>
+  );
 }
