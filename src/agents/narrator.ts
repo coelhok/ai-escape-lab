@@ -4,7 +4,12 @@ import { groq } from "@ai-sdk/groq";
 import { getScene } from "./tools/getScene";
 import { changeRoom } from "./tools/changeRoom";
 
-export async function narratorAgent(messages: any[]) {
+type AgentMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
+export async function narratorAgent(messages: AgentMessage[]) {
   const result = streamText({
     model: groq("llama-3.3-70b-versatile"),
 

@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from "react"
-import { superbase } from "@/lib/superbase/client"
+import { supabase } from "@/lib/supabase/client"
 import { Message, Room } from "@/types/game"
 
 export function useSession(sessionIdFromUrl: string | null) {
@@ -15,11 +15,11 @@ export function useSession(sessionIdFromUrl: string | null) {
 
   useEffect(() => {
     async function initSession() {
-      const { data: { user } } = await superbase.auth.getUser()
+      const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
       if (sessionIdFromUrl) {
-        const { data, error } = await superbase
+        const { data, error } = await supabase
           .from("sessions")
           .select("*")
           .eq("id", sessionIdFromUrl)
@@ -35,7 +35,7 @@ export function useSession(sessionIdFromUrl: string | null) {
         return
       }
 
-      const { data, error } = await superbase
+      const { data, error } = await supabase
         .from("sessions")
         .insert({
           user_id: user.id,
@@ -57,15 +57,15 @@ export function useSession(sessionIdFromUrl: string | null) {
   if (!initialized || !sessionId) return
 
   async function saveSession() {
-    const { error } = await superbase.from("sessions").update({
+    const { error } = await supabase.from("sessions").update({
       messages,
       current_room: currentRoom,
       inventory,
       updated_at: new Date().toISOString(),
     }).eq("id", sessionId!)
 
-    if (error) console.log('❌ Erro ao salvar:', error)
-    else console.log('✅ Sessão salva!')
+    if (error) console.log('? Erro ao salvar:', error)
+    else console.log('? Sessão salva!')
 
     
   }
@@ -79,4 +79,5 @@ export function useSession(sessionIdFromUrl: string | null) {
       inventory, setInventory,
     }
   }
+
 

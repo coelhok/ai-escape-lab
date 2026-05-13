@@ -5,6 +5,15 @@
 
 export type Room = "lab" | "corridor" | "server_room" | "exit"
 
+export type RoomInfo = {
+  id?: Room
+  name: string
+  description: string
+  emoji: string
+  imageUrl?: string
+  objects?: string[]
+}
+
 export type Session = {
   id: string
   current_room: Room
