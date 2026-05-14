@@ -1,47 +1,68 @@
 import { NextRequest } from "next/server";
 import { agentOrchestrator } from "@/agents/orchestrator";
+import type { GameState } from "@/lib/game/createGameState";
 
 type ChatMessage = {
   role: "user" | "assistant" | "system";
   content: string;
 };
 
-export async function POST(req: NextRequest) {
-  console.log("🚀 [1] Rota /api/chat chamada");
+type ChatBody = {
+  messages: ChatMessage[];
+  currentRoom?: string;
+  inventory?: string[];
+  sceneState?: string;
+  gameState?: GameState | null;
+};
 
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as ChatBody;
 
     const {
       messages,
-      currentRoom = "laboratory",
+      currentRoom = "lab",
       inventory = [],
-    }: {
-      messages: ChatMessage[];
-      currentRoom?: string;
-      inventory?: string[];
+      sceneState = "lab_locked",
+      gameState = null,
     } = body;
 
     const finalMessages: ChatMessage[] = [
       {
         role: "system",
         content: `
-Contexto atual do jogo:
-- Sala atual: ${currentRoom}
-- Inventário: ${inventory.join(", ") || "vazio"}
+Estado atual do jogo:
+
+Sala atual:
+${currentRoom}
+
+Estado visual:
+${sceneState}
+
+Inventário:
+${inventory.join(", ") || "vazio"}
+
+Game state:
+${JSON.stringify(gameState, null, 2)}
         `,
       },
       ...messages,
     ];
 
-    const result = await agentOrchestrator(finalMessages);
-
+    const result = await agentOrchestrator(
+            finalMessages,
+            currentRoom,
+            inventory,
+            sceneState,
+            gameState
+        ) 
+    const textStream = result.stream.textStream;
+    const stateUpdate = result.stateUpdate;
     const encoder = new TextEncoder();
-
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const textPart of result.textStream) {
+          for await (const textPart of textStream) {
             controller.enqueue(
               encoder.encode(
                 `data: ${JSON.stringify({
@@ -52,14 +73,25 @@ Contexto atual do jogo:
             );
           }
 
+          if (stateUpdate) {
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  type: "state",
+                  ...stateUpdate,
+                })}\n\n`
+              )
+            );
+          }
+
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ type: "done" })}\n\n`
+              `data: ${JSON.stringify({
+                type: "done",
+              })}\n\n`
             )
           );
         } catch (error) {
-          console.error("❌ [ERRO no stream]:", error);
-
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
@@ -76,17 +108,19 @@ Contexto atual do jogo:
 
     return new Response(stream, {
       headers: {
-        "Content-Type": "text/event-stream",
+        "Content-Type": "text/event-stream; charset=utf-8",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
       },
     });
-  } catch (error) {
-    console.error("❌ [ERRO interno /api/chat]:", error);
-
+  } catch {
     return Response.json(
-      { error: "Erro interno ao processar o chat." },
-      { status: 500 }
+      {
+        error: "Erro interno ao processar o chat.",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }

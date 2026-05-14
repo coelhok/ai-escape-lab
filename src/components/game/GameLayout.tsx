@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 import RadioChat from "./RadioChat";
 import ScenePanel from "./ScenePanel";
 import type { Message, Room } from "@/types/game";
+import type { GameState } from "@/lib/game/createGameState";
 
 type GameLayoutProps = {
   currentRoom: Room;
@@ -16,6 +17,11 @@ type GameLayoutProps = {
   onInventoryChange: React.Dispatch<React.SetStateAction<string[]>>;
   onHistoryClick: () => void;
   onLogout: () => Promise<void>;
+
+  sceneState?: string;
+  onSceneStateChange?: React.Dispatch<React.SetStateAction<string>>;
+  gameState?: GameState | null;
+  onGameStateChange?: React.Dispatch<React.SetStateAction<GameState | null>>;
 };
 
 export default function GameLayout({
@@ -27,6 +33,10 @@ export default function GameLayout({
   onInventoryChange,
   onHistoryClick: _onHistoryClick,
   onLogout: _onLogout,
+  sceneState = "lab_locked",
+  onSceneStateChange = () => {},
+  gameState = null,
+  onGameStateChange = () => {},
 }: GameLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -34,6 +44,7 @@ export default function GameLayout({
     <ScenePanel
       currentRoom={currentRoom}
       inventory={inventory}
+      sceneState={sceneState}
     />
   );
 
@@ -45,6 +56,10 @@ export default function GameLayout({
       setMessages={setMessages}
       onRoomChange={onRoomChange}
       onInventoryChange={onInventoryChange}
+      sceneState={sceneState}
+      onSceneStateChange={onSceneStateChange}
+      gameState={gameState}
+      onGameStateChange={onGameStateChange}
     />
   );
 
@@ -71,9 +86,7 @@ export default function GameLayout({
             </button>
           </header>
 
-          <div className="flex-1 overflow-hidden">
-            {chat}
-          </div>
+          <div className="flex-1 overflow-hidden">{chat}</div>
         </section>
       </div>
 

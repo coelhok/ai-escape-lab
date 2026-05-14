@@ -282,3 +282,4 @@ O sistema atual demonstra aplicação prática de:
 * tool calling
 * streaming conversacional
 * arquitetura orientada a LLMs
+* memória semântica avançada

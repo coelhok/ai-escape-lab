@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { Menu, X, RotateCcw, History, LogOut } from "lucide-react";
 
+import { createGameState, type GameState } from "@/lib/game/createGameState";
 import ScenePanel from "@/components/game/ScenePanel";
 import RadioChat from "@/components/game/RadioChat";
 import { supabase } from "@/lib/supabase/client";
@@ -14,12 +15,16 @@ export default function GameClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [gameState, setGameState] = useState<GameState | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [currentRoom, setCurrentRoom] = useState<Room>("lab");
   const [inventory, setInventory] = useState<string[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [currentRoom, setCurrentRoom] = useState<Room>("lab");
+  const [sceneState, setSceneState] = useState("lab_locked");
+  const [timeLeft, setTimeLeft] = useState(600);
+  const [gameOver, setGameOver] = useState(false);
 
   useEffect(() => {
     async function loadOrCreateSession() {
@@ -37,10 +42,15 @@ export default function GameClient() {
           setCurrentRoom((data.current_room as Room) || "lab");
           setInventory((data.inventory as string[]) || []);
           setMessages((data.messages as Message[]) || []);
+          setSceneState(data.scene_state || "lab_locked");
+          setTimeLeft(data.time_left || 600);
+          setGameState((data.game_state as GameState) || createGameState());
           setLoaded(true);
           return;
         }
       }
+
+      const initialGameState = createGameState();
 
       const { data, error } = await supabase
         .from("sessions")
@@ -48,12 +58,16 @@ export default function GameClient() {
           current_room: "lab",
           inventory: [],
           messages: [],
+          scene_state: "lab_locked",
+          time_left: 600,
+          game_state: initialGameState,
         })
         .select()
         .single();
 
       if (!error && data) {
         setSessionId(data.id);
+        setGameState(initialGameState);
         router.replace(`/game?sessionId=${data.id}`);
       }
 
@@ -73,32 +87,89 @@ export default function GameClient() {
           current_room: currentRoom,
           inventory,
           messages,
+          scene_state: sceneState,
+          time_left: timeLeft,
+          game_state: gameState,
           updated_at: new Date().toISOString(),
         })
         .eq("id", sessionId);
     }
 
     saveSession();
-  }, [loaded, sessionId, currentRoom, inventory, messages]);
+  }, [
+    loaded,
+    sessionId,
+    currentRoom,
+    inventory,
+    messages,
+    sceneState,
+    timeLeft,
+    gameState,
+  ]);
+
+  useEffect(() => {
+    if (!loaded || gameOver) return;
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setGameOver(true);
+
+          setMessages((old) => [
+            ...old,
+            {
+              role: "assistant",
+              content:
+                "🚨 ALERTA CRÍTICO. O reator entrou em colapso e o laboratório explodiu. MISSÃO FALHOU.",
+            },
+          ]);
+
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [loaded, gameOver]);
 
   async function handleNewGame() {
+    setLoaded(false);
+
+    const initialGameState = createGameState();
+
     const { data, error } = await supabase
       .from("sessions")
       .insert({
         current_room: "lab",
         inventory: [],
         messages: [],
+        scene_state: "lab_locked",
+        time_left: 600,
+        game_state: initialGameState,
       })
       .select()
       .single();
 
-    if (!error && data) {
-      setSessionId(data.id);
-      setCurrentRoom("lab");
-      setInventory([]);
-      setMessages([]);
-      router.replace(`/game?sessionId=${data.id}`);
+    if (error || !data) {
+      console.error("Erro ao criar nova sessão:", error);
+      setLoaded(true);
+      return;
     }
+
+    setSessionId(data.id);
+    setGameState(initialGameState);
+    setCurrentRoom("lab");
+    setInventory([]);
+    setMessages([]);
+    setSceneState("lab_locked");
+    setTimeLeft(600);
+    setGameOver(false);
+
+    router.push(`/game?sessionId=${data.id}`);
+    setLoaded(true);
   }
 
   async function handleLogout() {
@@ -106,7 +177,11 @@ export default function GameClient() {
   }
 
   const scene = (
-    <ScenePanel currentRoom={currentRoom} inventory={inventory} />
+    <ScenePanel
+      currentRoom={currentRoom}
+      inventory={inventory}
+      sceneState={sceneState}
+    />
   );
 
   return (
@@ -134,6 +209,11 @@ export default function GameClient() {
 
               <span className="rounded-full border border-green-700 bg-green-900/30 px-3 py-1 text-xs font-semibold text-green-400">
                 {currentRoom.toUpperCase()}
+              </span>
+
+              <span className="rounded-full border border-red-700 bg-red-900/30 px-3 py-1 text-xs font-semibold text-red-400">
+                ⏱ {Math.floor(timeLeft / 60)}:
+                {(timeLeft % 60).toString().padStart(2, "0")}
               </span>
             </div>
 
@@ -169,13 +249,17 @@ export default function GameClient() {
 
           <div className="min-h-0 flex-1 overflow-hidden">
             <RadioChat
-              currentRoom={currentRoom}
-              inventory={inventory}
-              messages={messages}
-              setMessages={setMessages}
-              onRoomChange={setCurrentRoom}
-              onInventoryChange={setInventory}
-            />
+                currentRoom={currentRoom}
+                inventory={inventory}
+                messages={messages}
+                setMessages={setMessages}
+                onRoomChange={setCurrentRoom}
+                onInventoryChange={setInventory}
+                sceneState={sceneState}
+                onSceneStateChange={setSceneState}
+                gameState={gameState}
+                onGameStateChange={setGameState}
+              />
           </div>
         </section>
       </div>

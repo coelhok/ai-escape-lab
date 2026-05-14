@@ -1,42 +1,53 @@
-import type { Message, Room, RoomInfo } from '@/types/game'
+
+import type { Room, RoomInfo } from "@/types/game";
+
+export const INITIAL_ROOM: Room = "lab";
+
 
 export const ROOMS: Record<Room, RoomInfo> = {
   lab: {
-    emoji: '🔬',
-    name: 'Laboratório',
+    id: "lab",
+    emoji: "🔬",
+    name: "Laboratório",
     description:
-      'Um laboratório escuro e abandonado. Equipamentos quebrados espalhados pelo chão. Uma porta de metal ao norte e uma janela gradeada ao leste.',
+      "Um laboratório abandonado com luzes piscando, papéis queimados e uma porta trancada com teclado numérico.",
+    imageUrl: "/rooms/lab.png",
+    objects: ["computador antigo", "mesa metálica", "teclado numérico"],
   },
+
   corridor: {
-    emoji: '🚪',
-    name: 'Corredor',
+    id: "corridor",
+    emoji: "🚪",
+    name: "Corredor",
     description:
-      'Um corredor longo e mal iluminado. O cheiro de ozônio no ar. Portas numeradas dos dois lados.',
+      "Um corredor estreito e escuro, com portas metálicas e marcas de queimadura nas paredes.",
+    imageUrl: "/rooms/corridor.png",
+    objects: ["porta metálica", "lâmpada quebrada", "placa de emergência"],
   },
+
   server_room: {
-    emoji: '🖥️',
-    name: 'Sala de Servidores',
+    id: "server_room",
+    emoji: "🖥️",
+    name: "Sala dos Servidores",
     description:
-      'Servidores zumbindo. Luzes piscando em vermelho. Um terminal desbloqueado no canto.',
+      "Uma sala fria cheia de servidores piscando em vermelho e cabos espalhados pelo chão.",
+    imageUrl: "/rooms/server_room.png",
+    objects: ["rack de servidor", "terminal bloqueado", "cabo solto"],
   },
+
   exit: {
-    emoji: '🚨',
-    name: 'Saída',
+    id: "exit",
+    emoji: "🚨",
+    name: "Saída",
     description:
-      'A saída! Uma porta reforçada com um painel de código numérico. Você está quase lá!',
+      "A saída de emergência está próxima, mas um painel de segurança ainda bloqueia a passagem.",
+    imageUrl: "/rooms/exit.png",
+    objects: ["porta de emergência", "painel final", "alarme"],
   },
-}
+};
 
-export const INITIAL_ROOM: Room = 'lab'
-
-export const INITIAL_MESSAGES: Message[] = [
-  {
-    role: 'assistant',
-    content:
-      'BASE para CAMPO. Agente, você está no laboratório. Equipamentos quebrados por toda parte. Consigo ver uma porta de metal ao norte. O que você vê aí? Câmbio.',
-  },
-]
+export const ROOM_ORDER: Room[] = ["lab", "corridor", "server_room", "exit"];
 
 export function isRoom(value: string): value is Room {
-  return value in ROOMS
+  return value in ROOMS;
 }

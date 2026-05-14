@@ -1,109 +1,146 @@
-import { createClient } from '@supabase/supabase-js'
-import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+);
 
-const ROOM_PROMPTS: Record<string, string> = {
-  lab: 'dark abandoned science laboratory, broken equipment, dim green lights, escape room, cinematic, photorealistic',
-  corridor: 'dark long corridor, numbered doors, flickering lights, escape room, cinematic, photorealistic',
-  server_room: 'dark server room, blinking red lights, computer terminal, escape room, cinematic, photorealistic',
-  exit: 'reinforced metal door, numeric keypad, emergency lights, escape room, cinematic, photorealistic',
-}
+const SCENE_PROMPTS: Record<string, string> = {
+  lab_locked:
+    "cinematic abandoned underground laboratory, locked metal door with numeric keypad, red emergency lights, broken science equipment, dark atmosphere, escape room, realistic",
+  lab_unlocked:
+    "cinematic abandoned underground laboratory, metal door unlocked and slightly open, green keypad light, corridor visible beyond the door, dark atmosphere, escape room, realistic",
+  corridor_dark:
+    "dark narrow underground corridor, emergency lights flickering, metal doors, industrial walls, tense escape room atmosphere, realistic",
+  server_room_reactor_active:
+    "dark server room, red warning lights, unstable reactor terminal, server racks blinking, emergency alarm, cinematic realistic escape room",
+  server_room_reactor_disabled:
+    "server room after reactor shutdown, green lights, stable terminal screen, server racks calm, emergency alert disabled, cinematic realistic",
+  exit_open:
+    "emergency exit door open, green safety lights, underground facility escape route, cinematic realistic atmosphere",
+};
 
-// Imagens de fallback caso a Pollinations falhe
 const FALLBACK_IMAGES: Record<string, string> = {
-  lab: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=512&h=384&fit=crop',
-  corridor: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=512&h=384&fit=crop',
-  server_room: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=512&h=384&fit=crop',
-  exit: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=512&h=384&fit=crop',
-}
+  lab_locked:
+    "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=512&h=384&fit=crop",
+  lab_unlocked:
+    "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=512&h=384&fit=crop",
+  corridor_dark:
+    "https://images.unsplash.com/photo-1518005020951-eccb494ad742?w=512&h=384&fit=crop",
+  server_room_reactor_active:
+    "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=512&h=384&fit=crop",
+  server_room_reactor_disabled:
+    "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=512&h=384&fit=crop",
+  exit_open:
+    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=512&h=384&fit=crop",
+};
 
-// Espera X milissegundos antes de continuar
 function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function generateImage(room: string): Promise<string | null> {
-  const prompt = encodeURIComponent(ROOM_PROMPTS[room] || ROOM_PROMPTS.lab)
+async function generateImage(scene: string): Promise<Buffer | null> {
+  const prompt = encodeURIComponent(SCENE_PROMPTS[scene] || SCENE_PROMPTS.lab_locked);
 
-  // Tenta 3 vezes com delay crescente
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      console.log(`🎨 Tentativa ${attempt} para sala: ${room}`)
+      const imageUrl = `https://image.pollinations.ai/prompt/${prompt}?width=512&height=384&seed=${scene}&nologo=true`;
 
-      const url = `https://image.pollinations.ai/prompt/${prompt}?width=512&height=384&seed=${Date.now()}&nologo=true`
-      const response = await fetch(url, { signal: AbortSignal.timeout(15000) })
+      const response = await fetch(imageUrl, {
+        signal: AbortSignal.timeout(15000),
+      });
 
       if (response.ok) {
-        const buffer = await response.arrayBuffer()
-        if (buffer.byteLength > 1000) { // garante que não é vazio
-          return Buffer.from(buffer).toString('base64')
+        const arrayBuffer = await response.arrayBuffer();
+
+        if (arrayBuffer.byteLength > 1000) {
+          return Buffer.from(arrayBuffer);
         }
       }
 
-      console.log(`⚠️ Tentativa ${attempt} falhou (${response.status}), aguardando...`)
-      await sleep(attempt * 2000) // 2s, 4s, 6s
-
-    } catch (err) {
-      console.log(`⚠️ Tentativa ${attempt} erro:`, err)
-      await sleep(attempt * 2000)
+      await sleep(1500);
+    } catch {
+      await sleep(1500);
     }
   }
 
-  return null
+  return null;
 }
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const room = searchParams.get('room') || 'lab'
+  const { searchParams } = new URL(req.url);
 
-  // Passo 1 — Verifica cache no Supabase
+  const sceneParam = searchParams.get("scene");
+  const roomParam = searchParams.get("room");
+
+  const scene =
+    sceneParam && SCENE_PROMPTS[sceneParam]
+      ? sceneParam
+      : roomParam === "lab"
+      ? "lab_locked"
+      : roomParam === "corridor"
+      ? "corridor_dark"
+      : roomParam === "server_room"
+      ? "server_room_reactor_active"
+      : roomParam === "exit"
+      ? "exit_open"
+      : "lab_locked";
+
+  const filePath = `${scene}.png`;
+
   try {
     const { data } = supabase.storage
-      .from('room-images')
-      .getPublicUrl(`${room}.png`)
+      .from("room-images")
+      .getPublicUrl(filePath);
 
-    const cacheCheck = await fetch(data.publicUrl, { method: 'HEAD', signal: AbortSignal.timeout(3000) })
+    const cacheCheck = await fetch(data.publicUrl, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(3000),
+    });
 
     if (cacheCheck.ok) {
-      console.log('⚡ Cache hit:', room)
-      return NextResponse.json({ url: data.publicUrl, cached: true })
+      return NextResponse.json({
+        scene,
+        url: data.publicUrl,
+        cached: true,
+      });
     }
   } catch {
-    // continua para gerar
+    // Se não tiver cache, gera imagem.
   }
 
-  // Passo 2 — Tenta gerar na Pollinations
-  const base64Image = await generateImage(room)
+  const imageBuffer = await generateImage(scene);
 
-  if (base64Image) {
+  if (imageBuffer) {
     try {
-      const buffer = Buffer.from(base64Image, 'base64')
-
       const { error } = await supabase.storage
-        .from('room-images')
-        .upload(`${room}.png`, buffer, {
-          contentType: 'image/png',
+        .from("room-images")
+        .upload(filePath, imageBuffer, {
+          contentType: "image/png",
           upsert: true,
-        })
+        });
 
       if (!error) {
         const { data } = supabase.storage
-          .from('room-images')
-          .getPublicUrl(`${room}.png`)
+          .from("room-images")
+          .getPublicUrl(filePath);
 
-        console.log('✅ Imagem salva:', room)
-        return NextResponse.json({ url: data.publicUrl, cached: false })
+        return NextResponse.json({
+          scene,
+          url: data.publicUrl,
+          cached: false,
+        });
       }
-    } catch (err) {
-      console.log('❌ Erro ao salvar no Supabase:', err)
+    } catch {
+      // Cai no fallback.
     }
   }
 
-  // Passo 3 — Fallback com imagem do Unsplash
-  console.log('🖼️ Usando fallback para:', room)
-  return NextResponse.json({ url: FALLBACK_IMAGES[room] || FALLBACK_IMAGES.lab, cached: false })
+  return NextResponse.json({
+    scene,
+    url: FALLBACK_IMAGES[scene] || FALLBACK_IMAGES.lab_locked,
+    cached: false,
+    fallback: true,
+  });
 }
